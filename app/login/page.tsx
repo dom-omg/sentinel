@@ -10,31 +10,34 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
+  async function doLogin(e: string, p: string) {
     setLoading(true)
     setError('')
-
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: e, password: p }),
       })
-
       const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error ?? 'Erreur de connexion')
-        return
-      }
-
+      if (!res.ok) { setError(data.error ?? 'Erreur de connexion'); return }
       router.push('/dashboard')
     } catch {
       setError('Erreur réseau')
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    await doLogin(email, password)
+  }
+
+  async function demoLogin() {
+    setEmail('admin@sentinel.demo')
+    setPassword('bastion2026')
+    await doLogin('admin@sentinel.demo', 'bastion2026')
   }
 
   return (
@@ -81,6 +84,34 @@ export default function LoginPage() {
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 24 }}>
             Accès sécurisé à votre console d'opérateurs
           </p>
+
+          {/* Demo shortcut */}
+          <button
+            type="button"
+            onClick={demoLogin}
+            disabled={loading}
+            style={{
+              width: '100%',
+              background: 'rgba(63,185,80,0.08)',
+              border: '1px solid rgba(63,185,80,0.3)',
+              borderRadius: 8,
+              padding: '10px 16px',
+              color: '#3fb950',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              marginBottom: 20,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            ⚡ Accès démo — 1 clic
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>ou connexion manuelle</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          </div>
 
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: 16 }}>
