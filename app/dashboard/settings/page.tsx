@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-
-const WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? ''
-const ORG_ID = process.env.NEXT_PUBLIC_DEFAULT_ORG_ID ?? ''
+import { useWorkspace } from '@/lib/workspace-context'
 
 interface WorkspaceInfo {
   workspace: { id: string; name: string; language_default: string; created_at: string }
@@ -13,6 +11,7 @@ interface WorkspaceInfo {
 }
 
 export default function SettingsPage() {
+  const { workspaceId: WORKSPACE_ID, orgId: ORG_ID } = useWorkspace()
   const router = useRouter()
   const [info, setInfo] = useState<WorkspaceInfo | null>(null)
   const [loading, setLoading] = useState(true)

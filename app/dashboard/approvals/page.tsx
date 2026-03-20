@@ -2,9 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import type { ApprovalRequest } from '@/lib/types'
-
-const WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? ''
-const ORG_ID = process.env.NEXT_PUBLIC_DEFAULT_ORG_ID ?? ''
+import { useWorkspace } from '@/lib/workspace-context'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n)
@@ -16,6 +14,7 @@ type Draft = { subject: string; body: string; edited_body?: string; language: st
 type Account = { client_name: string; client_email?: string; amount_owing: number; days_overdue: number; risk_level: string }
 
 export default function ApprovalsPage() {
+  const { workspaceId: WORKSPACE_ID, orgId: ORG_ID } = useWorkspace()
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([])
   const [selected, setSelected] = useState<ApprovalRequest | null>(null)
   const [loading, setLoading] = useState(true)

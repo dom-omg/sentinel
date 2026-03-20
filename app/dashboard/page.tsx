@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-
-const WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? ''
+import { useWorkspace } from '@/lib/workspace-context'
 
 interface KPIs {
   total_ar: number
@@ -15,6 +14,8 @@ interface KPIs {
   accounts_by_bucket: Record<string, number>
   accounts_by_risk: Record<string, number>
   recent_events: Array<{ event_type: string; actor_type: string; actor_name?: string; created_at: string; detail: Record<string, unknown> }>
+  avg_resolution_days: number
+  response_rate: number
 }
 
 function fmt(amount: number) {
@@ -82,6 +83,7 @@ function RiskBar({ label, count, total, color }: { label: string; count: number;
 }
 
 export default function DashboardPage() {
+  const { workspaceId: WORKSPACE_ID } = useWorkspace()
   const [kpis, setKpis] = useState<KPIs | null>(null)
   const [loading, setLoading] = useState(true)
 

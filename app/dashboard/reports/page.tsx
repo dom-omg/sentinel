@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-
-const WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? ''
+import { useWorkspace } from '@/lib/workspace-context'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n)
@@ -105,6 +104,7 @@ function WeekChart({ data }: { data: ReportData['activityByWeek'] }) {
 }
 
 export default function ReportsPage() {
+  const { workspaceId: WORKSPACE_ID } = useWorkspace()
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
 

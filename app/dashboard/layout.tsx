@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { WorkspaceContext } from '@/lib/workspace-context'
 
 interface NavItem {
   href: string
@@ -120,15 +121,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null)
   const [pendingCount, setPendingCount] = useState(0)
+  const [wsCtx, setWsCtx] = useState({
+    workspaceId: process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? '',
+    orgId: process.env.NEXT_PUBLIC_DEFAULT_ORG_ID ?? '',
+  })
 
-  const WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? ''
+  const WORKSPACE_ID = wsCtx.workspaceId
 
   useEffect(() => {
     fetch('/api/auth/me')
       .then(r => r.json())
       .then(d => {
-        if (d.user) setUser(d.user)
-        else router.push('/login')
+        if (d.user) {
+          setUser(d.user)
+          // Load real workspace for this user's org
+          fetch('/api/workspace/me')
+            .then(r => r.json())
+            .then(ws => {
+              if (ws.workspace_id) {
+                setWsCtx({ workspaceId: ws.workspace_id, orgId: ws.org_id ?? d.user.org_id })
+              }
+            })
+            .catch(() => {})
+        } else {
+          router.push('/login')
+        }
       })
       .catch(() => router.push('/login'))
   }, [router])
@@ -152,6 +169,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
+    <WorkspaceContext.Provider value={wsCtx}>
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--background)' }}>
       {/* Sidebar */}
       <aside style={{
@@ -296,5 +314,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {children}
       </main>
     </div>
+    </WorkspaceContext.Provider>
   )
 }

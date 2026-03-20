@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import type { AuditEntry } from '@/lib/types'
-
-const WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? ''
+import { useWorkspace } from '@/lib/workspace-context'
 
 const EVENT_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
   account_ingested:    { label: 'Comptes importés',        color: '#58a6ff', icon: '↓' },
@@ -169,6 +168,7 @@ function AuditRow({ entry }: { entry: AuditEntry }) {
 }
 
 export default function AuditPage() {
+  const { workspaceId: WORKSPACE_ID } = useWorkspace()
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)

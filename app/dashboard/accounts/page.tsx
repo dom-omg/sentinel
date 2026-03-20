@@ -5,9 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ARAccount } from '@/lib/types'
 import { RISK_COLORS } from '@/lib/risk'
-
-const WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? ''
-const ORG_ID = process.env.NEXT_PUBLIC_DEFAULT_ORG_ID ?? ''
+import { useWorkspace } from '@/lib/workspace-context'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n)
@@ -27,12 +25,15 @@ interface Toast { id: number; type: 'success' | 'error' | 'info'; msg: string }
 
 export default function AccountsPage() {
   const router = useRouter()
+  const { workspaceId: WORKSPACE_ID, orgId: ORG_ID } = useWorkspace()
   const [accounts, setAccounts] = useState<ARAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState<string | null>(null)
   const [batchRunning, setBatchRunning] = useState(false)
   const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null)
   const [filter, setFilter] = useState<'all' | 'open' | 'pending_approval' | 'sent'>('all')
+  const [search, setSearch] = useState('')
+  const [riskFilter, setRiskFilter] = useState('')
   const [toasts, setToasts] = useState<Toast[]>([])
 
   function addToast(type: Toast['type'], msg: string) {
@@ -41,17 +42,21 @@ export default function AccountsPage() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const loadAccounts = useCallback(async () => {
+    if (!WORKSPACE_ID) return
     const params = new URLSearchParams({ workspace_id: WORKSPACE_ID })
     if (filter !== 'all') params.set('status', filter)
+    if (search) params.set('search', search)
+    if (riskFilter) params.set('risk_level', riskFilter)
     const res = await fetch(`/api/accounts?${params}`)
     const data = await res.json()
     setAccounts(data.accounts ?? [])
     setLoading(false)
-  }, [filter])
+  }, [filter, search, riskFilter, WORKSPACE_ID])
 
   useEffect(() => {
-    if (WORKSPACE_ID) loadAccounts()
+    loadAccounts()
   }, [loadAccounts])
 
   async function generateDraft(accountId: string) {
@@ -147,7 +152,47 @@ export default function AccountsPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Filters */}
+          {/* Search */}
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher un client..."
+            style={{
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-2)',
+              borderRadius: 8,
+              padding: '7px 12px',
+              color: 'var(--text-primary)',
+              fontSize: 12,
+              outline: 'none',
+              width: 200,
+            }}
+          />
+
+          {/* Risk filter */}
+          <select
+            value={riskFilter}
+            onChange={e => setRiskFilter(e.target.value)}
+            style={{
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-2)',
+              borderRadius: 8,
+              padding: '7px 10px',
+              color: riskFilter ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontSize: 12,
+              cursor: 'pointer',
+              outline: 'none',
+            }}
+          >
+            <option value="">Tout risque</option>
+            <option value="low">Faible</option>
+            <option value="medium">Moyen</option>
+            <option value="high">Élevé</option>
+            <option value="critical">Critique</option>
+          </select>
+
+          {/* Status Filters */}
           <div style={{ display: 'flex', gap: 4 }}>
             {filters.map(f => (
               <button

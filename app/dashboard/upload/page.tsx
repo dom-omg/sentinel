@@ -4,13 +4,12 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Papa from 'papaparse'
 import type { CSVRow } from '@/lib/types'
-
-const WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? ''
-const ORG_ID = process.env.NEXT_PUBLIC_DEFAULT_ORG_ID ?? ''
+import { useWorkspace } from '@/lib/workspace-context'
 
 const EXPECTED_COLUMNS = ['client_name', 'amount_owing', 'days_overdue']
 
 export default function UploadPage() {
+  const { workspaceId: WORKSPACE_ID, orgId: ORG_ID } = useWorkspace()
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
   const [rows, setRows] = useState<CSVRow[]>([])

@@ -58,16 +58,19 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const { status, org_id, workspace_id } = await req.json() as {
-      status: 'resolved' | 'open'
+    const body = await req.json() as {
+      status?: 'resolved' | 'open'
+      notes?: string
       org_id: string
       workspace_id: string
     }
+    const { status, notes, org_id, workspace_id } = body
 
     const db = createServerClient()
-    await db.from('ar_accounts')
-      .update({ status, last_action_at: new Date().toISOString() })
-      .eq('id', id)
+    const updates: Record<string, unknown> = { last_action_at: new Date().toISOString() }
+    if (status !== undefined) updates.status = status
+    if (notes !== undefined) updates.notes = notes
+    await db.from('ar_accounts').update(updates).eq('id', id)
 
     await writeAudit({
       workspace_id,

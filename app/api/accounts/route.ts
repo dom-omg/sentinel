@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status')
     const bucket = searchParams.get('bucket')
     const risk_level = searchParams.get('risk_level')
+    const search = searchParams.get('search')
 
     if (!workspace_id) {
       return NextResponse.json({ error: 'workspace_id requis' }, { status: 400 })
@@ -27,6 +28,7 @@ export async function GET(req: NextRequest) {
     if (status) query = query.eq('status', status)
     if (bucket) query = query.eq('bucket', bucket)
     if (risk_level) query = query.eq('risk_level', risk_level)
+    if (search) query = query.ilike('client_name', `%${search}%`)
 
     const { data, error } = await query
 

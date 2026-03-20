@@ -202,8 +202,18 @@ export default function LoginPage() {
           </form>
         </div>
 
+        {/* Register link */}
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+            Pas encore de compte?{' '}
+            <a href="/register" style={{ color: '#3fb950', textDecoration: 'none', fontWeight: 500 }}>
+              Essai gratuit 14 jours →
+            </a>
+          </p>
+        </div>
+
         {/* Footer */}
-        <div style={{ textAlign: 'center', marginTop: 24 }}>
+        <div style={{ textAlign: 'center', marginTop: 12 }}>
           <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>
             Données hébergées au Canada · Conforme Loi 25 / PIPEDA
           </p>

@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import type { ARAccount, Draft, AuditEntry } from '@/lib/types'
-
-const ORG_ID = process.env.NEXT_PUBLIC_DEFAULT_ORG_ID ?? ''
+import { useWorkspace } from '@/lib/workspace-context'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n)
@@ -62,6 +61,7 @@ interface DraftWithApproval extends Draft {
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const { orgId: ORG_ID } = useWorkspace()
   const [account, setAccount] = useState<ARAccount | null>(null)
   const [drafts, setDrafts] = useState<DraftWithApproval[]>([])
   const [audit, setAudit] = useState<AuditEntry[]>([])
@@ -69,6 +69,15 @@ export default function AccountDetailPage() {
   const [expandedDraft, setExpandedDraft] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [resolving, setResolving] = useState(false)
+  // Notes editing (#8)
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [notesValue, setNotesValue] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
+  // Draft inline editing (#7)
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null)
+  const [editSubject, setEditSubject] = useState('')
+  const [editBody, setEditBody] = useState('')
+  const [savingDraft, setSavingDraft] = useState(false)
 
   async function load() {
     const res = await fetch(`/api/accounts/${id}`)
@@ -77,7 +86,40 @@ export default function AccountDetailPage() {
     setAccount(data.account)
     setDrafts(data.drafts)
     setAudit(data.audit)
+    setNotesValue(data.account?.notes ?? '')
     setLoading(false)
+  }
+
+  async function saveNotes() {
+    if (!account) return
+    setSavingNotes(true)
+    try {
+      await fetch(`/api/accounts/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: notesValue, workspace_id: account.workspace_id, org_id: ORG_ID }),
+      })
+      setEditingNotes(false)
+      await load()
+    } finally {
+      setSavingNotes(false)
+    }
+  }
+
+  async function saveDraftEdit() {
+    if (!editingDraftId) return
+    setSavingDraft(true)
+    try {
+      await fetch(`/api/drafts/${editingDraftId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: editSubject, body: editBody }),
+      })
+      setEditingDraftId(null)
+      await load()
+    } finally {
+      setSavingDraft(false)
+    }
   }
 
   useEffect(() => { if (id) load() }, [id])
@@ -237,20 +279,73 @@ export default function AccountDetailPage() {
         ))}
       </div>
 
-      {/* Account meta */}
-      {(account.invoice_number || account.notes) && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 18px', marginBottom: 24 }}>
-          {account.invoice_number && (
-            <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: account.notes ? 6 : 0 }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: 8 }}>Facture</span>
-              {account.invoice_number}
-            </p>
-          )}
-          {account.notes && (
-            <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>{account.notes}</p>
+      {/* Account meta + Notes */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 18px', marginBottom: 24 }}>
+        {account.invoice_number && (
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 10 }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: 8 }}>Facture</span>
+            {account.invoice_number}
+          </p>
+        )}
+
+        {/* Notes section */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editingNotes ? 8 : 4 }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Notes internes</span>
+            {!editingNotes && (
+              <button
+                onClick={() => { setNotesValue(account.notes ?? ''); setEditingNotes(true) }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', padding: 0 }}
+              >
+                {account.notes ? 'Modifier' : '+ Ajouter une note'}
+              </button>
+            )}
+          </div>
+
+          {editingNotes ? (
+            <div>
+              <textarea
+                value={notesValue}
+                onChange={e => setNotesValue(e.target.value)}
+                placeholder="Note interne visible uniquement par l'équipe..."
+                rows={3}
+                style={{
+                  width: '100%',
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border-2)',
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  resize: 'vertical',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  marginBottom: 8,
+                }}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={saveNotes}
+                  disabled={savingNotes}
+                  style={{ background: '#238636', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {savingNotes ? 'Sauvegarde...' : 'Sauvegarder'}
+                </button>
+                <button
+                  onClick={() => setEditingNotes(false)}
+                  style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 14px', fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          ) : (
+            account.notes
+              ? <p style={{ color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.5 }}>{account.notes}</p>
+              : <p style={{ color: 'var(--text-muted)', fontSize: 12, fontStyle: 'italic' }}>Aucune note</p>
           )}
         </div>
-      )}
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
         {/* Drafts */}
@@ -309,30 +404,77 @@ export default function AccountDetailPage() {
 
                     {isExpanded && (
                       <div style={{ borderTop: '1px solid var(--border)', padding: '16px' }}>
-                        {/* Email preview */}
-                        <div style={{
-                          background: 'var(--surface-2)', border: '1px solid var(--border-2)',
-                          borderRadius: 8, overflow: 'hidden', marginBottom: 12,
-                        }}>
-                          {/* Email header */}
-                          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', background: 'var(--surface-3)' }}>
-                            <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
-                              <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, minWidth: 24 }}>À:</span>
-                              <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{account.client_email ?? '(pas d\'email)'}</span>
+                        {editingDraftId === draft.id ? (
+                          /* Edit mode */
+                          <div>
+                            <div style={{ marginBottom: 10 }}>
+                              <label style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>Sujet</label>
+                              <input
+                                value={editSubject}
+                                onChange={e => setEditSubject(e.target.value)}
+                                style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-2)', borderRadius: 7, padding: '8px 12px', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+                              />
+                            </div>
+                            <div style={{ marginBottom: 10 }}>
+                              <label style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>Corps</label>
+                              <textarea
+                                value={editBody}
+                                onChange={e => setEditBody(e.target.value)}
+                                rows={8}
+                                style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-2)', borderRadius: 7, padding: '8px 12px', color: 'var(--text-primary)', fontSize: 12, lineHeight: 1.7, resize: 'vertical', outline: 'none', fontFamily: 'inherit' }}
+                              />
                             </div>
                             <div style={{ display: 'flex', gap: 8 }}>
-                              <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, minWidth: 24 }}>Sujet:</span>
-                              <span style={{ color: 'var(--text-primary)', fontSize: 11, fontWeight: 500 }}>{draft.subject}</span>
+                              <button
+                                onClick={saveDraftEdit}
+                                disabled={savingDraft}
+                                style={{ background: '#238636', color: '#fff', border: 'none', borderRadius: 6, padding: '7px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                              >
+                                {savingDraft ? 'Sauvegarde...' : 'Sauvegarder'}
+                              </button>
+                              <button
+                                onClick={() => setEditingDraftId(null)}
+                                style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '7px 16px', fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer' }}
+                              >
+                                Annuler
+                              </button>
                             </div>
                           </div>
-                          {/* Email body */}
-                          <div style={{ padding: '14px', color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                            {draft.edited_body || draft.body}
+                        ) : (
+                          /* Preview mode */
+                          <div>
+                            <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)', borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
+                              <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', background: 'var(--surface-3)' }}>
+                                <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, minWidth: 24 }}>À:</span>
+                                  <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{account.client_email ?? '(pas d\'email)'}</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, minWidth: 24 }}>Sujet:</span>
+                                  <span style={{ color: 'var(--text-primary)', fontSize: 11, fontWeight: 500 }}>{draft.subject}</span>
+                                </div>
+                              </div>
+                              <div style={{ padding: '14px', color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                                {draft.edited_body || draft.body}
+                              </div>
+                            </div>
+                            {draft.status !== 'sent' && (
+                              <button
+                                onClick={() => {
+                                  setEditingDraftId(draft.id)
+                                  setEditSubject(draft.subject)
+                                  setEditBody(draft.edited_body || draft.body)
+                                }}
+                                style={{ background: 'transparent', border: '1px solid var(--border-2)', borderRadius: 6, padding: '5px 12px', fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer' }}
+                              >
+                                ✏ Modifier
+                              </button>
+                            )}
                           </div>
-                        </div>
+                        )}
 
                         {draft.approval?.reason && (
-                          <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                          <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 8 }}>
                             Note: {draft.approval.reason}
                           </p>
                         )}

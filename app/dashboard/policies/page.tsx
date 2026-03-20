@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { Policy } from '@/lib/types'
 import { DEFAULT_POLICIES } from '@/lib/policy'
-
-const WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? ''
+import { useWorkspace } from '@/lib/workspace-context'
 
 const OUTCOME_CONFIG: Record<string, { label: string; color: string }> = {
   allow:              { label: 'Autoriser',          color: '#3fb950' },
@@ -140,6 +139,7 @@ function PolicyRow({ policy, systemMode }: { policy: Omit<Policy, 'id' | 'worksp
 }
 
 export default function PoliciesPage() {
+  const { workspaceId: WORKSPACE_ID } = useWorkspace()
   const [workspacePolicies, setWorkspacePolicies] = useState<Policy[]>([])
   const [loading, setLoading] = useState(true)
 

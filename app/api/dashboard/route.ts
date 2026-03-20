@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     const db = createServerClient()
 
-    const [accountsRes, approvalsRes, sentRes, recentRes] = await Promise.all([
+    const [accountsRes, approvalsRes, sentRes, recentRes, resolvedWithDatesRes] = await Promise.all([
       db.from('ar_accounts').select('amount_owing, status, bucket, risk_level').eq('workspace_id', workspace_id),
       db.from('approval_requests').select('id').eq('workspace_id', workspace_id).eq('status', 'pending'),
       db.from('audit_log').select('detail').eq('workspace_id', workspace_id).eq('event_type', 'email_sent'),
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
         .eq('workspace_id', workspace_id)
         .order('created_at', { ascending: false })
         .limit(8),
+      db.from('ar_accounts').select('created_at, last_action_at').eq('workspace_id', workspace_id).eq('status', 'resolved'),
     ])
 
     const accounts = accountsRes.data ?? []
@@ -40,6 +41,24 @@ export async function GET(req: NextRequest) {
     const resolved = accounts.filter(a => a.status === 'resolved')
     const amountRecovered = resolved.reduce((sum, a) => sum + (a.amount_owing ?? 0), 0)
 
+    // Avg resolution time (days from created_at to last_action_at for resolved accounts)
+    const resolvedWithDates = resolvedWithDatesRes.data ?? []
+    let avgResolutionDays = 0
+    if (resolvedWithDates.length > 0) {
+      const totalDays = resolvedWithDates.reduce((sum, a) => {
+        if (!a.last_action_at) return sum
+        const days = (new Date(a.last_action_at).getTime() - new Date(a.created_at).getTime()) / (1000 * 60 * 60 * 24)
+        return sum + days
+      }, 0)
+      avgResolutionDays = Math.round(totalDays / resolvedWithDates.length)
+    }
+
+    // Response rate: resolved / (resolved + sent accounts)
+    const sentAccounts = accounts.filter(a => a.status === 'sent').length
+    const responseRate = (resolved.length + sentAccounts) > 0
+      ? Math.round((resolved.length / (resolved.length + sentAccounts)) * 100)
+      : 0
+
     return NextResponse.json({
       total_ar: totalAR,
       total_accounts: openAccounts.length,
@@ -50,6 +69,8 @@ export async function GET(req: NextRequest) {
       accounts_by_bucket: byBucket,
       accounts_by_risk: byRisk,
       recent_events: recentRes.data ?? [],
+      avg_resolution_days: avgResolutionDays,
+      response_rate: responseRate,
     })
   } catch (err) {
     console.error('[DASHBOARD]', err)
