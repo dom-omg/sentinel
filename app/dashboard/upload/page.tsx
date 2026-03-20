@@ -18,6 +18,8 @@ export default function UploadPage() {
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
   const [success, setSuccess] = useState<{ ingested: number } | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [genResult, setGenResult] = useState<{ generated: number; pending_approval: number } | null>(null)
 
   function handleFile(file: File) {
     setError('')
@@ -69,6 +71,25 @@ export default function UploadPage() {
       setError('Erreur réseau')
     } finally {
       setUploading(false)
+    }
+  }
+
+  async function handleGenerateAll() {
+    if (!WORKSPACE_ID) return
+    setGenerating(true)
+    try {
+      const res = await fetch('/api/drafts/generate-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspace_id: WORKSPACE_ID, org_id: ORG_ID }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error ?? 'Erreur génération'); return }
+      setGenResult({ generated: data.generated ?? 0, pending_approval: data.pending_approval ?? 0 })
+    } catch {
+      setError('Erreur réseau')
+    } finally {
+      setGenerating(false)
     }
   }
 
@@ -218,25 +239,60 @@ export default function UploadPage() {
           <p style={{ color: '#3fb950', fontSize: 15, fontWeight: 700, marginBottom: 4 }}>
             {success.ingested} comptes importés avec succès
           </p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-            BASTION a segmenté et scoré chaque compte. Vous pouvez maintenant générer les drafts.
+              <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+            BASTION a segmenté et scoré chaque compte. Voulez-vous générer tous les drafts maintenant?
           </p>
-          <button
-            onClick={() => router.push('/dashboard/accounts')}
-            style={{
-              marginTop: 14,
-              background: '#3fb950',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              padding: '9px 18px',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Voir les comptes →
-          </button>
+
+          {genResult ? (
+            <div style={{ marginTop: 14 }}>
+              <p style={{ color: '#3fb950', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+                {genResult.generated} draft{genResult.generated !== 1 ? 's' : ''} générés
+                {genResult.pending_approval > 0 && ` · ${genResult.pending_approval} en attente d'approbation`}
+              </p>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button
+                  onClick={() => router.push('/dashboard/accounts')}
+                  style={{ background: '#3fb950', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Voir les comptes →
+                </button>
+                {genResult.pending_approval > 0 && (
+                  <button
+                    onClick={() => router.push('/dashboard/approvals')}
+                    style={{ background: 'rgba(248,81,73,0.1)', color: '#f85149', border: '1px solid rgba(248,81,73,0.3)', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Traiter les approbations ({genResult.pending_approval})
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <button
+                onClick={handleGenerateAll}
+                disabled={generating}
+                style={{
+                  background: '#3fb950',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '9px 18px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: generating ? 'not-allowed' : 'pointer',
+                  opacity: generating ? 0.7 : 1,
+                }}
+              >
+                {generating ? 'Génération...' : `⚡ Générer tous les drafts (${success.ingested})`}
+              </button>
+              <button
+                onClick={() => router.push('/dashboard/accounts')}
+                style={{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 18px', fontSize: 13, cursor: 'pointer' }}
+              >
+                Voir les comptes d'abord
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <button

@@ -83,6 +83,18 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: '/dashboard/connectors',
+    label: 'Connecteurs',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <circle cx="3" cy="8" r="2" stroke="currentColor" strokeWidth="1.4"/>
+        <circle cx="13" cy="4" r="2" stroke="currentColor" strokeWidth="1.4"/>
+        <circle cx="13" cy="12" r="2" stroke="currentColor" strokeWidth="1.4"/>
+        <path d="M5 8h3M8 8L11 4M8 8L11 12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
     href: '/dashboard/settings',
     label: 'Paramètres',
     icon: (

@@ -216,20 +216,41 @@ export default function AuditPage() {
             Journal immuable de toutes les actions — {total} entrée{total > 1 ? 's' : ''}
           </p>
         </div>
-        <button
-          onClick={loadEntries}
-          style={{
-            background: 'var(--surface-2)',
-            border: '1px solid var(--border-2)',
-            borderRadius: 8,
-            padding: '7px 14px',
-            color: 'var(--text-secondary)',
-            fontSize: 12,
-            cursor: 'pointer',
-          }}
-        >
-          Actualiser
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <a
+            href={`/api/audit/export?workspace_id=${WORKSPACE_ID}`}
+            download
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-2)',
+              borderRadius: 8,
+              padding: '7px 14px',
+              color: 'var(--text-secondary)',
+              fontSize: 12,
+              textDecoration: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            ↓ Exporter CSV
+          </a>
+          <button
+            onClick={loadEntries}
+            style={{
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-2)',
+              borderRadius: 8,
+              padding: '7px 14px',
+              color: 'var(--text-secondary)',
+              fontSize: 12,
+              cursor: 'pointer',
+            }}
+          >
+            Actualiser
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
