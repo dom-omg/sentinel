@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
       .from('approval_requests')
       .select(`
         *,
-        drafts (*),
-        ar_accounts (*)
+        draft:drafts (*),
+        account:ar_accounts (*)
       `)
       .eq('workspace_id', workspace_id)
       .eq('status', 'pending')

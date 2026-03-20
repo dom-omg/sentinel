@@ -30,7 +30,7 @@ export async function POST(
     // Load approval with draft and account
     const { data: approval, error: apprErr } = await db
       .from('approval_requests')
-      .select('*, drafts(*), ar_accounts(*)')
+      .select('*, draft:drafts(*), account:ar_accounts(*)')
       .eq('id', id)
       .single()
 

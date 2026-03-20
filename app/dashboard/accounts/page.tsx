@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import type { ARAccount } from '@/lib/types'
 import { RISK_COLORS } from '@/lib/risk'
 
@@ -12,34 +13,45 @@ function fmt(n: number) {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  open: { label: 'Ouvert', color: 'var(--text-muted)' },
-  draft_ready: { label: 'Draft prêt', color: '#58a6ff' },
-  pending_approval: { label: 'En attente', color: '#e3b341' },
-  sent: { label: 'Envoyé', color: '#3fb950' },
-  resolved: { label: 'Résolu', color: '#3fb950' },
-  escalated: { label: 'Escaladé', color: '#d29922' },
-  blocked: { label: 'Bloqué', color: '#f85149' },
+  open:             { label: 'Ouvert',       color: 'var(--text-muted)' },
+  draft_ready:      { label: 'Draft prêt',   color: '#58a6ff' },
+  pending_approval: { label: 'En attente',   color: '#e3b341' },
+  sent:             { label: 'Envoyé',       color: '#3fb950' },
+  resolved:         { label: 'Résolu',       color: '#3fb950' },
+  escalated:        { label: 'Escaladé',     color: '#d29922' },
+  blocked:          { label: 'Bloqué',       color: '#f85149' },
 }
 
+interface Toast { id: number; type: 'success' | 'error' | 'info'; msg: string }
+
 export default function AccountsPage() {
+  const router = useRouter()
   const [accounts, setAccounts] = useState<ARAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | 'open' | 'pending_approval'>('all')
+  const [batchRunning, setBatchRunning] = useState(false)
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null)
+  const [filter, setFilter] = useState<'all' | 'open' | 'pending_approval' | 'sent'>('all')
+  const [toasts, setToasts] = useState<Toast[]>([])
 
-  async function loadAccounts() {
+  function addToast(type: Toast['type'], msg: string) {
+    const id = Date.now()
+    setToasts(prev => [...prev, { id, type, msg }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
+  }
+
+  const loadAccounts = useCallback(async () => {
     const params = new URLSearchParams({ workspace_id: WORKSPACE_ID })
     if (filter !== 'all') params.set('status', filter)
     const res = await fetch(`/api/accounts?${params}`)
     const data = await res.json()
     setAccounts(data.accounts ?? [])
     setLoading(false)
-  }
+  }, [filter])
 
   useEffect(() => {
     if (WORKSPACE_ID) loadAccounts()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter])
+  }, [loadAccounts])
 
   async function generateDraft(accountId: string) {
     setGenerating(accountId)
@@ -50,24 +62,79 @@ export default function AccountsPage() {
         body: JSON.stringify({ account_id: accountId, workspace_id: WORKSPACE_ID, org_id: ORG_ID }),
       })
       const data = await res.json()
-      if (!res.ok) { alert(data.error); return }
+      if (!res.ok) { addToast('error', data.error ?? 'Erreur génération'); return }
       await loadAccounts()
       if (data.requires_approval) {
-        alert('Draft généré et soumis pour approbation.')
+        addToast('info', 'Draft généré — en attente d\'approbation')
+        setTimeout(() => router.push('/dashboard/approvals'), 1200)
+      } else {
+        addToast('success', 'Draft généré')
       }
     } finally {
       setGenerating(null)
     }
   }
 
+  const openCount = accounts.filter(a => a.status === 'open').length
+
+  async function generateAllOpen() {
+    const openAccounts = accounts.filter(a => a.status === 'open')
+    if (openAccounts.length === 0) return
+    setBatchRunning(true)
+    setBatchProgress({ done: 0, total: openAccounts.length })
+    let approvalCount = 0
+    for (let i = 0; i < openAccounts.length; i++) {
+      try {
+        const res = await fetch('/api/drafts/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ account_id: openAccounts[i].id, workspace_id: WORKSPACE_ID, org_id: ORG_ID }),
+        })
+        const data = await res.json()
+        if (res.ok && data.requires_approval) approvalCount++
+      } catch { /* continue */ }
+      setBatchProgress({ done: i + 1, total: openAccounts.length })
+    }
+    await loadAccounts()
+    setBatchRunning(false)
+    setBatchProgress(null)
+    if (approvalCount > 0) {
+      addToast('info', `${openAccounts.length} drafts générés — ${approvalCount} en attente d'approbation`)
+      setTimeout(() => router.push('/dashboard/approvals'), 1500)
+    } else {
+      addToast('success', `${openAccounts.length} drafts générés`)
+    }
+  }
+
   const filters = [
-    { key: 'all', label: 'Tous' },
-    { key: 'open', label: 'Ouverts' },
+    { key: 'all',             label: 'Tous' },
+    { key: 'open',            label: 'Ouverts' },
     { key: 'pending_approval', label: 'En attente' },
+    { key: 'sent',            label: 'Envoyés' },
   ] as const
 
   return (
-    <div style={{ padding: 28 }}>
+    <div style={{ padding: 28, position: 'relative' }}>
+      {/* Toast stack */}
+      <div style={{ position: 'fixed', top: 20, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {toasts.map(t => (
+          <div key={t.id} style={{
+            background: t.type === 'success' ? 'rgba(63,185,80,0.12)' : t.type === 'error' ? 'rgba(248,81,73,0.12)' : 'rgba(88,166,255,0.12)',
+            border: `1px solid ${t.type === 'success' ? 'rgba(63,185,80,0.4)' : t.type === 'error' ? 'rgba(248,81,73,0.4)' : 'rgba(88,166,255,0.4)'}`,
+            color: t.type === 'success' ? '#3fb950' : t.type === 'error' ? '#f85149' : '#58a6ff',
+            borderRadius: 8,
+            padding: '10px 16px',
+            fontSize: 13,
+            fontWeight: 500,
+            backdropFilter: 'blur(8px)',
+            animation: 'fadeInUp 0.2s ease',
+            maxWidth: 320,
+          }}>
+            {t.msg}
+          </div>
+        ))}
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h1 style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>
@@ -77,25 +144,79 @@ export default function AccountsPage() {
             {accounts.length} compte{accounts.length > 1 ? 's' : ''} · Triés par score de risque
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {filters.map(f => (
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Filters */}
+          <div style={{ display: 'flex', gap: 4 }}>
+            {filters.map(f => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                style={{
+                  background: filter === f.key ? 'var(--surface-2)' : 'transparent',
+                  border: `1px solid ${filter === f.key ? 'var(--border-2)' : 'transparent'}`,
+                  borderRadius: 7,
+                  padding: '6px 12px',
+                  color: filter === f.key ? 'var(--text-primary)' : 'var(--text-muted)',
+                  fontSize: 12,
+                  fontWeight: filter === f.key ? 500 : 400,
+                  cursor: 'pointer',
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Batch generate */}
+          {openCount > 0 && !batchRunning && (
             <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
+              onClick={generateAllOpen}
+              disabled={!!generating}
               style={{
-                background: filter === f.key ? 'var(--surface-2)' : 'transparent',
-                border: `1px solid ${filter === f.key ? 'var(--border-2)' : 'transparent'}`,
-                borderRadius: 7,
-                padding: '6px 12px',
-                color: filter === f.key ? 'var(--text-primary)' : 'var(--text-muted)',
+                background: 'rgba(63,185,80,0.1)',
+                border: '1px solid rgba(63,185,80,0.3)',
+                borderRadius: 8,
+                padding: '7px 14px',
+                color: '#3fb950',
                 fontSize: 12,
-                fontWeight: filter === f.key ? 500 : 400,
-                cursor: 'pointer',
+                fontWeight: 600,
+                cursor: generating ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                whiteSpace: 'nowrap',
               }}
             >
-              {f.label}
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M2 8h12M8 2l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Générer {openCount} draft{openCount > 1 ? 's' : ''}
             </button>
-          ))}
+          )}
+
+          {batchRunning && batchProgress && (
+            <div style={{
+              background: 'rgba(88,166,255,0.1)',
+              border: '1px solid rgba(88,166,255,0.25)',
+              borderRadius: 8,
+              padding: '7px 14px',
+              color: '#58a6ff',
+              fontSize: 12,
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <div style={{
+                width: 10, height: 10, borderRadius: '50%',
+                border: '2px solid rgba(88,166,255,0.3)',
+                borderTopColor: '#58a6ff',
+                animation: 'spin 0.7s linear infinite',
+              }} />
+              {batchProgress.done}/{batchProgress.total} drafts...
+            </div>
+          )}
         </div>
       </div>
 
@@ -160,14 +281,7 @@ export default function AccountsPage() {
                       <span className={RISK_COLORS[acc.risk_level]} style={{ fontSize: 12, fontWeight: 600 }}>
                         {acc.risk_level === 'low' ? 'Faible' : acc.risk_level === 'medium' ? 'Moyen' : acc.risk_level === 'high' ? 'Élevé' : 'Critique'}
                       </span>
-                      <div style={{
-                        width: 40,
-                        height: 3,
-                        marginTop: 3,
-                        background: 'var(--surface-3)',
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                      }}>
+                      <div style={{ width: 40, height: 3, marginTop: 3, background: 'var(--surface-3)', borderRadius: 2, overflow: 'hidden' }}>
                         <div style={{
                           width: `${acc.risk_score}%`,
                           height: '100%',
@@ -197,10 +311,10 @@ export default function AccountsPage() {
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      {canGenerate && (
+                      {canGenerate ? (
                         <button
                           onClick={() => generateDraft(acc.id)}
-                          disabled={!!generating}
+                          disabled={!!generating || batchRunning}
                           style={{
                             background: isGenerating ? 'var(--surface-2)' : '#238636',
                             color: '#fff',
@@ -209,14 +323,42 @@ export default function AccountsPage() {
                             padding: '5px 12px',
                             fontSize: 12,
                             fontWeight: 600,
-                            cursor: isGenerating ? 'not-allowed' : 'pointer',
-                            opacity: isGenerating ? 0.6 : 1,
+                            cursor: (isGenerating || batchRunning) ? 'not-allowed' : 'pointer',
+                            opacity: (isGenerating || batchRunning) ? 0.6 : 1,
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                          }}
+                        >
+                          {isGenerating && (
+                            <div style={{
+                              width: 8, height: 8, borderRadius: '50%',
+                              border: '1.5px solid rgba(255,255,255,0.3)',
+                              borderTopColor: '#fff',
+                              animation: 'spin 0.7s linear infinite',
+                            }} />
+                          )}
+                          {isGenerating ? 'Génération...' : 'Générer draft'}
+                        </button>
+                      ) : acc.status === 'pending_approval' ? (
+                        <button
+                          onClick={() => router.push('/dashboard/approvals')}
+                          style={{
+                            background: 'rgba(227,179,65,0.1)',
+                            border: '1px solid rgba(227,179,65,0.3)',
+                            borderRadius: 6,
+                            padding: '5px 12px',
+                            color: '#e3b341',
+                            fontSize: 12,
+                            fontWeight: 500,
+                            cursor: 'pointer',
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {isGenerating ? 'Génération...' : 'Générer draft'}
+                          Réviser →
                         </button>
-                      )}
+                      ) : null}
                     </td>
                   </tr>
                 )
@@ -225,6 +367,16 @@ export default function AccountsPage() {
           </table>
         </div>
       )}
+
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 }

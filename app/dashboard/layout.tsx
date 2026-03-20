@@ -90,6 +90,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null)
   const [pendingCount, setPendingCount] = useState(0)
 
+  const WORKSPACE_ID = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? ''
+
   useEffect(() => {
     fetch('/api/auth/me')
       .then(r => r.json())
@@ -99,6 +101,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       })
       .catch(() => router.push('/login'))
   }, [router])
+
+  useEffect(() => {
+    if (!WORKSPACE_ID) return
+    const fetchCount = () => {
+      fetch(`/api/approvals?workspace_id=${WORKSPACE_ID}`)
+        .then(r => r.json())
+        .then(d => setPendingCount(d.approvals?.length ?? 0))
+        .catch(() => {})
+    }
+    fetchCount()
+    const iv = setInterval(fetchCount, 15000)
+    return () => clearInterval(iv)
+  }, [WORKSPACE_ID])
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
