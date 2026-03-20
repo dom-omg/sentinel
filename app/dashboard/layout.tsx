@@ -13,7 +13,9 @@ interface NavItem {
 function ShieldIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-      <path d="M8 1L14 4.5V11.5L8 15L2 11.5V4.5L8 1Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M8 1.5L13.5 4.5V10.5C13.5 13 11 14.5 8 15.5C5 14.5 2.5 13 2.5 10.5V4.5L8 1.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+      <rect x="5.5" y="8" width="5" height="3.5" rx="0.75" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M6.5 8V6.5C6.5 5.4 7.1 4.8 8 4.8C8.9 4.8 9.5 5.4 9.5 6.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
     </svg>
   )
 }
@@ -136,7 +138,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <ShieldIcon />
           </div>
           <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-            SENTINEL
+            BASTION
           </span>
         </div>
 

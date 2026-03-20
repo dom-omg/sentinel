@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { SignJWT } from 'jose'
 import crypto from 'crypto'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'sentinel-secret')
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'bastion-secret')
 
 export async function POST(req: NextRequest) {
   try {
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    res.cookies.set('sentinel_token', token, {
+    res.cookies.set('bastion_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

@@ -18,11 +18,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const DEMO_PASSWORD = 'sentinel2026'
+const DEMO_PASSWORD = 'bastion2026'
 const passwordHash = crypto.createHash('sha256').update(DEMO_PASSWORD).digest('hex')
 
 async function seed() {
-  console.log('🔵 SENTINEL Seed — démarrage\n')
+  console.log('🔵 BASTION Seed — démarrage\n')
 
   // 1. Organization
   console.log('📦 Création de l\'organisation...')
@@ -228,7 +228,7 @@ async function seed() {
   console.log(`   ✅ ${sampleAccounts.length} comptes AR insérés`)
 
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log('✅ SENTINEL seed complété!\n')
+  console.log('✅ BASTION seed complété!\n')
   console.log('📋 Variables à ajouter dans .env.local:')
   console.log(`   NEXT_PUBLIC_DEFAULT_WORKSPACE_ID=${ws.id}`)
   console.log(`   NEXT_PUBLIC_DEFAULT_ORG_ID=${org.id}`)

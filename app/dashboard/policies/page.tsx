@@ -186,7 +186,7 @@ export default function PoliciesPage() {
             Comment fonctionne le Policy Engine
           </p>
           <p style={{ color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.6 }}>
-            À chaque action demandée, SENTINEL évalue les politiques par ordre de priorité (P1 = plus haute priorité).
+            À chaque action demandée, BASTION évalue les politiques par ordre de priorité (P1 = plus haute priorité).
             La première politique correspondante s'applique. Les politiques système ne peuvent pas être désactivées.
             Le résultat peut être: <strong style={{ color: '#3fb950' }}>autoriser</strong>,{' '}
             <strong style={{ color: '#58a6ff' }}>autoriser avec log</strong>,{' '}

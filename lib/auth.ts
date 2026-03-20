@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'sentinel-secret')
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'bastion-secret')
 
 export interface AuthPayload {
   sub: string
@@ -14,7 +14,7 @@ export interface AuthPayload {
 
 export async function getAuth(req: NextRequest): Promise<AuthPayload | null> {
   try {
-    const token = req.cookies.get('sentinel_token')?.value
+    const token = req.cookies.get('bastion_token')?.value
     if (!token) return null
     const { payload } = await jwtVerify(token, JWT_SECRET)
     return payload as unknown as AuthPayload

@@ -54,12 +54,13 @@ export default function LoginPage() {
               justifyContent: 'center',
             }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 1L14 4.5V11.5L8 15L2 11.5V4.5L8 1Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-                <path d="M8 5V8M8 8V11M8 8H5M8 8H11" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M8 1.5L13.5 4.5V10.5C13.5 13 11 14.5 8 15.5C5 14.5 2.5 13 2.5 10.5V4.5L8 1.5Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                <rect x="5.5" y="8" width="5" height="3.5" rx="0.75" stroke="white" strokeWidth="1.2"/>
+                <path d="M6.5 8V6.5C6.5 5.4 7.1 4.8 8 4.8C8.9 4.8 9.5 5.4 9.5 6.5V8" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
               </svg>
             </div>
             <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 18, letterSpacing: '-0.02em' }}>
-              SENTINEL
+              BASTION
             </span>
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>

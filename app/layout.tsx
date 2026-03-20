@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'SENTINEL — AI Workforce Control Plane',
+  title: 'BASTION — AI Workforce Control Plane',
   description: 'Secure, auditable AI operators for Canadian businesses.',
 }
 

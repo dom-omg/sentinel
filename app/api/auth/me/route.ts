@@ -5,7 +5,7 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'sentinel-
 
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get('sentinel_token')?.value
+    const token = req.cookies.get('bastion_token')?.value
 
     if (!token) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })

@@ -25,6 +25,6 @@ export async function writeAudit(params: AuditParams): Promise<void> {
     })
   } catch (err) {
     // Audit failures must never crash the main flow
-    console.error('[SENTINEL AUDIT] Failed to write audit log:', err)
+    console.error('[BASTION AUDIT] Failed to write audit log:', err)
   }
 }

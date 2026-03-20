@@ -219,7 +219,7 @@ export default function UploadPage() {
             {success.ingested} comptes importés avec succès
           </p>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-            SENTINEL a segmenté et scoré chaque compte. Vous pouvez maintenant générer les drafts.
+            BASTION a segmenté et scoré chaque compte. Vous pouvez maintenant générer les drafts.
           </p>
           <button
             onClick={() => router.push('/dashboard/accounts')}
