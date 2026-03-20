@@ -157,6 +157,37 @@ export async function POST(req: NextRequest) {
         detail: { expires_at: approval?.expires_at },
       })
 
+      // Notify approvers by email
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const { data: members } = await db
+            .from('workspace_members')
+            .select('user:users(email, name, role)')
+            .eq('workspace_id', workspace_id)
+            .in('role', ['admin', 'approver'])
+
+          const approverEmails = (members ?? [])
+            .map((m: Record<string, unknown>) => (m.user as { email?: string })?.email)
+            .filter((e): e is string => !!e)
+
+          if (approverEmails.length > 0) {
+            const { Resend } = await import('resend')
+            const resend = new Resend(process.env.RESEND_API_KEY)
+            const riskLabel = { low: 'Faible', medium: 'Moyen', high: 'Élevé', critical: 'Critique' }[account.risk_level as string] ?? account.risk_level
+            const amount = new Intl.NumberFormat('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(account.amount_owing)
+
+            await resend.emails.send({
+              from: process.env.RESEND_FROM_EMAIL ?? 'bastion@sentinel.ca',
+              to: approverEmails,
+              subject: `[BASTION] Approbation requise — ${account.client_name} (${amount})`,
+              text: `Bonjour,\n\nUn email de recouvrement généré par BASTION attend votre approbation.\n\nClient: ${account.client_name}\nMontant: ${amount}\nJours en souffrance: ${account.days_overdue} jours\nNiveau de risque: ${riskLabel}\nSujet email: ${draft.subject}\n\nConnectez-vous à BASTION pour approuver ou rejeter ce draft.\n\n---\nCe message est automatique. Ne pas répondre.`,
+            })
+          }
+        } catch {
+          // Non-blocking — approval was still created
+        }
+      }
+
       return NextResponse.json({ draft, approval, requires_approval: true })
     }
 

@@ -83,6 +83,15 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: '/dashboard/reports',
+    label: 'Rapports',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <path d="M2 12V8M6 12V5M10 12V7M14 12V3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
     href: '/dashboard/connectors',
     label: 'Connecteurs',
     icon: (

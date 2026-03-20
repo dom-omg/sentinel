@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { getAuth, requireRole } from '@/lib/auth'
 import { writeAudit } from '@/lib/audit'
+import { buildEmailHtml } from '@/lib/email-template'
 
 export async function POST(
   req: NextRequest,
@@ -43,11 +44,22 @@ export async function POST(
         const { Resend } = await import('resend')
         const resend = new Resend(process.env.RESEND_API_KEY)
 
+        const htmlBody = buildEmailHtml({
+          clientName: account.client_name,
+          amountOwing: account.amount_owing,
+          daysOverdue: account.days_overdue,
+          invoiceNumber: account.invoice_number ?? undefined,
+          subject: draft.subject,
+          body: emailBody,
+          language: (draft.language ?? 'fr') as 'fr' | 'en',
+        })
+
         const { data: emailData, error: resendError } = await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL ?? 'facturation@sentinel.ca',
           to: account.client_email,
           subject: draft.subject,
           text: emailBody,
+          html: htmlBody,
         })
 
         if (resendError) {

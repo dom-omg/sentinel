@@ -169,6 +169,27 @@ export default function AccountsPage() {
             ))}
           </div>
 
+          {/* Export CSV */}
+          <a
+            href={`/api/accounts/export?workspace_id=${WORKSPACE_ID}`}
+            download
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border-2)',
+              borderRadius: 8,
+              padding: '7px 12px',
+              color: 'var(--text-secondary)',
+              fontSize: 12,
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            ↓ CSV
+          </a>
+
           {/* Batch generate */}
           {openCount > 0 && !batchRunning && (
             <button
