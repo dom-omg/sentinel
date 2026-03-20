@@ -1,0 +1,30 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@/lib/supabase/server'
+import { getAuth } from '@/lib/auth'
+
+export async function GET(req: NextRequest) {
+  try {
+    const auth = await getAuth(req)
+    if (!auth) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+
+    const { searchParams } = new URL(req.url)
+    const workspace_id = searchParams.get('workspace_id')
+
+    if (!workspace_id) {
+      return NextResponse.json({ error: 'workspace_id requis' }, { status: 400 })
+    }
+
+    const db = createServerClient()
+    const { data, error } = await db
+      .from('policies')
+      .select('*')
+      .eq('workspace_id', workspace_id)
+      .order('priority', { ascending: true })
+
+    if (error) throw error
+    return NextResponse.json({ policies: data ?? [] })
+  } catch (err) {
+    console.error('[POLICIES GET]', err)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}
