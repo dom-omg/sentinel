@@ -16,10 +16,14 @@ export async function GET(req: NextRequest) {
 
     const db = createServerClient()
 
-    const [accountsRes, approvalsRes, sentRes] = await Promise.all([
+    const [accountsRes, approvalsRes, sentRes, recentRes] = await Promise.all([
       db.from('ar_accounts').select('amount_owing, status, bucket, risk_level').eq('workspace_id', workspace_id),
       db.from('approval_requests').select('id').eq('workspace_id', workspace_id).eq('status', 'pending'),
       db.from('audit_log').select('detail').eq('workspace_id', workspace_id).eq('event_type', 'email_sent'),
+      db.from('audit_log').select('event_type, actor_type, actor_name, created_at, detail')
+        .eq('workspace_id', workspace_id)
+        .order('created_at', { ascending: false })
+        .limit(8),
     ])
 
     const accounts = accountsRes.data ?? []
@@ -45,6 +49,7 @@ export async function GET(req: NextRequest) {
       amount_recovered: amountRecovered,
       accounts_by_bucket: byBucket,
       accounts_by_risk: byRisk,
+      recent_events: recentRes.data ?? [],
     })
   } catch (err) {
     console.error('[DASHBOARD]', err)

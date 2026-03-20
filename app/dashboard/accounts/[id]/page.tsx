@@ -68,6 +68,7 @@ export default function AccountDetailPage() {
   const [loading, setLoading] = useState(true)
   const [expandedDraft, setExpandedDraft] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
+  const [resolving, setResolving] = useState(false)
 
   async function load() {
     const res = await fetch(`/api/accounts/${id}`)
@@ -80,6 +81,21 @@ export default function AccountDetailPage() {
   }
 
   useEffect(() => { if (id) load() }, [id])
+
+  async function markResolved() {
+    if (!account) return
+    setResolving(true)
+    try {
+      await fetch(`/api/accounts/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'resolved', workspace_id: account.workspace_id, org_id: ORG_ID }),
+      })
+      await load()
+    } finally {
+      setResolving(false)
+    }
+  }
 
   async function generateDraft() {
     if (!account) return
@@ -181,6 +197,20 @@ export default function AccountDetailPage() {
             }}
           >
             Aller aux approbations →
+          </button>
+        )}
+        {account.status === 'sent' && (
+          <button
+            onClick={markResolved}
+            disabled={resolving}
+            style={{
+              background: 'rgba(63,185,80,0.1)', border: '1px solid rgba(63,185,80,0.3)',
+              color: '#3fb950', borderRadius: 8, padding: '9px 18px',
+              fontSize: 13, fontWeight: 600, cursor: resolving ? 'not-allowed' : 'pointer',
+              opacity: resolving ? 0.7 : 1,
+            }}
+          >
+            {resolving ? 'En cours...' : '✓ Marquer comme résolu'}
           </button>
         )}
       </div>
