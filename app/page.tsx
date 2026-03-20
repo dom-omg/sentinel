@@ -433,6 +433,82 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Pricing */}
+        <section id="pricing" style={{ padding:'0 48px 80px', maxWidth:1000, margin:'0 auto' }}>
+          <div style={{ textAlign:'center', marginBottom:48 }}>
+            <p style={{ color:'var(--text-muted)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:12 }}>Tarification</p>
+            <h2 style={{ fontSize:34, fontWeight:700, letterSpacing:'-0.03em', marginBottom:14 }}>Simple. Prévisible. Canadien.</h2>
+            <p style={{ color:'var(--text-secondary)', fontSize:15 }}>Pas de frais par utilisateur. Pas de surprise. Vous payez par opérateur déployé.</p>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14 }}>
+            {[
+              {
+                name:'Starter', price:'199', period:'/mois',
+                desc:'Pour les équipes qui démarrent avec l\'IA.',
+                features:['1 workspace','1 opérateur actif','500 comptes AR / mois','Policy Engine inclus','Audit trail 90 jours','Support email'],
+                cta:'Commencer', highlight:false,
+              },
+              {
+                name:'Growth', price:'499', period:'/mois',
+                desc:'Pour les équipes en croissance qui veulent plus de contrôle.',
+                features:['3 workspaces','3 opérateurs actifs','2 000 comptes AR / mois','Policy Engine avancé','Audit trail illimité','Approbations multi-rôles','Support prioritaire'],
+                cta:'Choisir Growth', highlight:true,
+              },
+              {
+                name:'Enterprise', price:'Sur mesure', period:'',
+                desc:'Pour les organisations avec des besoins de conformité avancés.',
+                features:['Workspaces illimités','Opérateurs illimités','Volumes personnalisés','SSO / SAML','SLA garanti','Conformité SOC 2','Gestionnaire dédié'],
+                cta:'Nous contacter', highlight:false,
+              },
+            ].map(plan => (
+              <div key={plan.name} style={{
+                background: plan.highlight ? 'rgba(63,185,80,0.04)' : 'var(--surface)',
+                border: plan.highlight ? MG.border : '1px solid var(--border)',
+                borderRadius:14, padding:'28px 24px',
+                boxShadow: plan.highlight ? '0 0 30px rgba(63,185,80,0.08)' : 'none',
+                position:'relative',
+                animation: plan.highlight ? 'borderPulse 4s ease-in-out infinite' : 'none',
+              } as React.CSSProperties}>
+                {plan.highlight && (
+                  <div style={{ position:'absolute', top:-12, left:'50%', transform:'translateX(-50%)',
+                    background: MG.gradient, backgroundSize:'200% 100%',
+                    borderRadius:20, padding:'3px 14px', fontSize:11, fontWeight:700,
+                    color:'#030608', letterSpacing:'0.04em', whiteSpace:'nowrap',
+                  }}>
+                    ★ POPULAIRE
+                  </div>
+                )}
+                <p style={{ color:'var(--text-muted)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>{plan.name}</p>
+                <div style={{ display:'flex', alignItems:'baseline', gap:4, marginBottom:8 }}>
+                  <span style={{ fontSize: plan.price === 'Sur mesure' ? 22 : 36, fontWeight:800, letterSpacing:'-0.03em', color: plan.highlight ? '#3fb950' : 'var(--text-primary)' }}>
+                    {plan.price === 'Sur mesure' ? plan.price : `$${plan.price}`}
+                  </span>
+                  {plan.period && <span style={{ color:'var(--text-muted)', fontSize:13 }}>{plan.period}</span>}
+                </div>
+                <p style={{ color:'var(--text-secondary)', fontSize:13, lineHeight:1.5, marginBottom:22 }}>{plan.desc}</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:24 }}>
+                  {plan.features.map(f => (
+                    <div key={f} style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ color:'#3fb950', fontSize:11 }}>✓</span>
+                      <span style={{ color:'var(--text-secondary)', fontSize:13 }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link href="/login" style={{
+                  display:'block', textAlign:'center',
+                  background: plan.highlight ? '#3fb950' : 'var(--surface-2)',
+                  color: plan.highlight ? '#030608' : 'var(--text-primary)',
+                  border: plan.highlight ? 'none' : '1px solid var(--border-2)',
+                  borderRadius:9, padding:'11px 0', fontSize:14, fontWeight:700,
+                  textDecoration:'none', transition:'opacity 0.2s',
+                }}>
+                  {plan.cta}
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* CTA */}
         <section style={{ maxWidth:860, margin:'0 auto 80px', padding:'0 48px' }}>
           <div style={{ background:'linear-gradient(135deg,rgba(63,185,80,0.05),rgba(88,166,255,0.03))', border: MG.border, borderRadius:16, padding:'52px 48px', textAlign:'center', animation:'borderPulse 4s ease-in-out infinite' }}>

@@ -82,6 +82,16 @@ const NAV: NavItem[] = [
       </svg>
     ),
   },
+  {
+    href: '/dashboard/settings',
+    label: 'Paramètres',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.5"/>
+        <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.42 1.42M11.53 11.53l1.42 1.42M3.05 12.95l1.42-1.42M11.53 4.47l1.42-1.42" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

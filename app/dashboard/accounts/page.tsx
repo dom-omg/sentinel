@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { ARAccount } from '@/lib/types'
 import { RISK_COLORS } from '@/lib/risk'
 
@@ -258,10 +259,12 @@ export default function AccountsPage() {
                 return (
                   <tr key={acc.id} style={{ borderBottom: i < accounts.length - 1 ? '1px solid var(--border)' : 'none' }}>
                     <td style={{ padding: '12px 16px' }}>
-                      <p style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500 }}>{acc.client_name}</p>
-                      {acc.client_email && (
-                        <p style={{ color: 'var(--text-muted)', fontSize: 11 }}>{acc.client_email}</p>
-                      )}
+                      <Link href={`/dashboard/accounts/${acc.id}`} style={{ textDecoration: 'none' }}>
+                        <p style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500 }}>{acc.client_name}</p>
+                        {acc.client_email && (
+                          <p style={{ color: 'var(--text-muted)', fontSize: 11 }}>{acc.client_email}</p>
+                        )}
+                      </Link>
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <span style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'monospace' }}>
